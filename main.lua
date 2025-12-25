@@ -2,7 +2,7 @@ local player = {}
 local window = {}
 
 function love.load()
-  love.window.setTitle("Edge Collision Demo")
+  love.window.setTitle("Learning love2d")
 
   window.w, window.h = love.graphics.getDimensions()
 
@@ -16,12 +16,16 @@ function love.load()
 
   player.isMoving = false
   player.touchingEdge = false
+
+  player.maxHealth = 100
+  player.health = player.maxHealth
+  player.regenTimer = 0
 end
 
 function love.update(dt)
   --refresh window dimensions if the window is resized
   window.w, window.h = love.graphics.getDimensions()
- 
+
   local dx, dy = 0, 0
 
   if love.keyboard.isDown("up") or love.keyboard.isDown("k") then
@@ -71,10 +75,30 @@ function love.update(dt)
   player.x = newX
   player.y = newY
 
+  --damage when pushing into an edge
+  if player.touchingEdge and player.isMoving and player.health > 0 then
+    player.health = player.health - 1
+  end
+
+  --player health regen: +1 hp every 2s while below max
+  if player.health < player.maxHealth then
+    player.regenTimer = player.regenTimer + dt
+    if player.regenTimer >= 2 then
+      player.health = player.health + 1
+      if player.health > player.maxHealth then
+        player.health = player.maxHealth
+      end
+      player.regenTimer = player.regenTimer -2
+    end
+  else
+    --at full health, no need to count
+    player.regenTimer = 0
+  end
+
 end
 
 function love.draw()
-
+  --the player
   if player.touchingEdge then
     love.graphics.setColor(1, 0, 0)
   elseif player.isMoving then
@@ -84,6 +108,26 @@ function love.draw()
   end
 
   love.graphics.rectangle("fill", player.x, player.y, player.w, player.h)
+
+  --health bar
+  local barWidth, barHeight = 200, 20
+  local margin = 10
+  local x = window.w - barWidth - margin
+  local y = margin
+
+  local ratio = player.health / player.maxHealth
+
+  --bar bg
+  love.graphics.setColor(0.2, 0.2, 0.2)
+  love.graphics.rectangle("fill", x - 2, y - 2, barWidth + 4, barHeight + 4)
+
+  --bar fill
+  love.graphics.setColor(0.8, 0, 0)
+  love.graphics.rectangle("fill", x, y, barWidth * ratio, barHeight)
+
+  --health text
+  love.graphics.setColor(1, 1, 1)
+  love.graphics.print(string.format("HP: %d / %d", player.health, player.maxHealth), x, y + barHeight + 4)
 
   --instructions and debug info
   love.graphics.setColor(1, 1, 1)
